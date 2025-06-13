@@ -59,7 +59,7 @@ export function DemoNavigator() {
         name="Main"
         component={MainScreen}
         options={{
-          tabBarLabel: "MainScreen",
+          tabBarLabel: "Main Screen",
           tabBarIcon: ({ focused }) => (
             <Icon icon="components" color={focused ? colors.tint : colors.tintInactive} size={30} />
           ),
@@ -70,7 +70,7 @@ export function DemoNavigator() {
         name="Second"
         component={SecondScreen}
         options={{
-          tabBarLabel: "SecondScreen",
+          tabBarLabel: "Second Screen",
           tabBarIcon: ({ focused }) => (
             <Icon icon="community" color={focused ? colors.tint : colors.tintInactive} size={30} />
           ),
@@ -81,7 +81,7 @@ export function DemoNavigator() {
         name="Third"
         component={ThirdScreen}
         options={{
-          tabBarLabel: "ThirdScreen",
+          tabBarLabel: "Third Screen",
           tabBarIcon: ({ focused }) => (
             <Icon icon="podcast" color={focused ? colors.tint : colors.tintInactive} size={30} />
           ),

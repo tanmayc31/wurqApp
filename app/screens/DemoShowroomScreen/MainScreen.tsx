@@ -82,7 +82,7 @@ const headerStyle: ViewStyle = {
   borderRadius: 8,
   marginBottom: 16,
   alignItems: 'center',
-  // shadow for iOS
+
   shadowColor: '#000',
   shadowOffset: { width: 0, height: 1 },
   shadowOpacity: 0.1,

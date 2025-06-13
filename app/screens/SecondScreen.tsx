@@ -1,5 +1,5 @@
 import React, { FC, useEffect, useState } from "react"
-import { View, Text, ScrollView, TextInput } from "react-native"
+import { View, Text, TextInput, ActivityIndicator } from "react-native"
 import { Screen } from "@/components"
 import { DemoTabScreenProps } from "@/navigators/DemoNavigator"
 
@@ -7,6 +7,8 @@ export const SecondScreen: FC<DemoTabScreenProps<"Second">> = function SecondScr
   const [timer, setTimer] = useState(0)
   const [users, setUsers] = useState([])
   const [usersText, setUsersText] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [promiseResult, setPromiseResult] = useState("")
 
   // Timer that starts when page opens
   useEffect(() => {
@@ -20,6 +22,7 @@ export const SecondScreen: FC<DemoTabScreenProps<"Second">> = function SecondScr
   // Fetch users when page loads
   useEffect(() => {
     fetchUsers()
+    startPromiseInterval()
   }, [])
 
   const fetchUsers = async () => {
@@ -28,43 +31,102 @@ export const SecondScreen: FC<DemoTabScreenProps<"Second">> = function SecondScr
       const data = await response.json()
       setUsers(data)
       
-      // Convert users to text format
-      const userTextData = data.map((item: any) => 
-        `${item.user.name} ${item.user.lastname}, Age: ${item.user.age}, Fee: $${item.user.fee}, Location: ${item.location}`
-      ).join('\n')
+      // Format users data in table-like format
+      let formattedText = "NAME                    AGE    FEE    LOCATION    DATE\n"
+      formattedText += "============================================================\n"
       
-      setUsersText(userTextData)
+      data.forEach((item: any) => {
+        const name = `${item.user.name} ${item.user.lastname}`
+        const age = item.user.age.toString()
+        const fee = `$${item.user.fee}`
+        const location = item.location
+        const date = item.date
+        
+        formattedText += `${name.padEnd(23)} ${age.padEnd(6)} ${fee.padEnd(6)} ${location.padEnd(11)} ${date}\n`
+      })
+      
+      setUsersText(formattedText)
     } catch (error) {
       console.error('Error fetching users:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  // Format timer display (minutes:seconds)
+  // Promise that starts an interval of 1 second and returns once called 3 times
+  const startPromiseInterval = () => {
+    const promise = new Promise((resolve) => {
+      let count = 0
+      const intervalId = setInterval(() => {
+        count++
+        console.log(`Promise interval called ${count} times`)
+        
+        if (count === 3) {
+          clearInterval(intervalId)
+          resolve(`Promise completed after ${count} intervals`)
+        }
+      }, 1000)
+    })
+
+    promise.then((result: any) => {
+      setPromiseResult(result)
+      console.log(result)
+    })
+  }
+
+  // Format timer display (MM:SS)
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
+  if (loading) {
+    return (
+      <Screen preset="fixed" safeAreaEdges={["top"]}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" />
+          <Text>Loading...</Text>
+        </View>
+      </Screen>
+    )
+  }
+
   return (
     <Screen preset="scroll" safeAreaEdges={["top"]}>
       <View style={{ flex: 1, padding: 20 }}>
         
-        {/* Timer Display */}
+        {/* Timer */}
         <View style={{ 
-          backgroundColor: '#e8e8e8', 
+          backgroundColor: '#f0f0f0', 
           padding: 20, 
           borderRadius: 10, 
           marginBottom: 20,
           alignItems: 'center'
         }}>
-          <Text style={{ fontSize: 18, marginBottom: 10 }}>Timer</Text>
-          <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#333' }}>
+          <Text style={{ fontSize: 18, marginBottom: 10 }}>Page Timer</Text>
+          <Text style={{ fontSize: 36, fontWeight: 'bold', color: '#333' }}>
             {formatTime(timer)}
           </Text>
         </View>
 
-        {/* Users Text Box */}
+        {/* Promise Result */}
+        {promiseResult && (
+          <View style={{
+            backgroundColor: '#11468F',
+            padding: 15,
+            borderRadius: 8,
+            marginBottom: 20,
+            
+            
+          }}>
+            <Text style={{ fontSize: 14, color: 'white' }}>
+              {promiseResult}
+            </Text>
+          </View>
+        )}
+
+        {/* Users Table */}
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 18, marginBottom: 10, fontWeight: 'bold' }}>
             All Users Data:
@@ -76,11 +138,12 @@ export const SecondScreen: FC<DemoTabScreenProps<"Second">> = function SecondScr
               borderColor: '#ccc',
               borderRadius: 8,
               padding: 15,
-              minHeight: 300,
+              minHeight: 400,
               textAlignVertical: 'top',
               backgroundColor: '#f9f9f9',
-              fontSize: 14,
-              fontFamily: 'monospace'
+              fontSize: 12,
+              fontFamily: 'monospace',
+              lineHeight: 16
             }}
             multiline={true}
             value={usersText}
