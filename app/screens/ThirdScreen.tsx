@@ -1,386 +1,133 @@
-import { observer } from "mobx-react-lite"
-import { ComponentType, FC, useCallback, useEffect, useMemo, useState } from "react"
-import {
-  AccessibilityProps,
-  ActivityIndicator,
-  Image,
-  ImageSourcePropType,
-  ImageStyle,
-  Platform,
-  StyleSheet,
-  TextStyle,
-  View,
-  ViewStyle,
-} from "react-native"
-import { type ContentStyle } from "@shopify/flash-list"
-import Animated, {
-  Extrapolation,
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from "react-native-reanimated"
-import {
-  Button,
-  ButtonAccessoryProps,
-  Card,
-  EmptyState,
-  Icon,
-  ListView,
-  Screen,
-  Switch,
-  Text,
-} from "@/components"
-import { isRTL, translate } from "@/i18n"
-import { useStores } from "../models"
-import { Episode } from "../models/Episode"
-import { DemoTabScreenProps } from "../navigators/DemoNavigator"
-import type { ThemedStyle } from "@/theme"
-import { $styles } from "../theme"
-import { delay } from "../utils/delay"
-import { openLinkInBrowser } from "../utils/openLinkInBrowser"
-import { useAppTheme } from "@/utils/useAppTheme"
+import React, { FC, useState } from "react"
+import { View, Text, TextInput, TouchableOpacity } from "react-native"
+import { Screen } from "@/components"
+import { DemoTabScreenProps } from "@/navigators/DemoNavigator"
 
-const ICON_SIZE = 14
+export const ThirdScreen: FC<DemoTabScreenProps<"Third">> = function ThirdScreen(_props) {
+  const [points, setPoints] = useState("189")
+  const [name, setName] = useState("WOD Newton")
 
-const rnrImage1 = require("../../assets/images/demo/rnr-image-1.png")
-const rnrImage2 = require("../../assets/images/demo/rnr-image-2.png")
-const rnrImage3 = require("../../assets/images/demo/rnr-image-3.png")
-const rnrImages = [rnrImage1, rnrImage2, rnrImage3]
-
-export const ThirdScreen: FC<DemoTabScreenProps<"Third">> = observer(
-  function ThirdScreen(_props) {
-    const { episodeStore } = useStores()
-    const { themed } = useAppTheme()
-
-    const [refreshing, setRefreshing] = useState(false)
-    const [isLoading, setIsLoading] = useState(false)
-
-    // initially, kick off a background refresh without the refreshing UI
-    useEffect(() => {
-      ;(async function load() {
-        setIsLoading(true)
-        await episodeStore.fetchEpisodes()
-        setIsLoading(false)
-      })()
-    }, [episodeStore])
-
-    // simulate a longer refresh, if the refresh is too fast for UX
-    async function manualRefresh() {
-      setRefreshing(true)
-      await Promise.all([episodeStore.fetchEpisodes(), delay(750)])
-      setRefreshing(false)
-    }
-
-    return (
-      <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={$styles.flex1}>
-        <ListView<Episode>
-          contentContainerStyle={themed([$styles.container, $listContentContainer])}
-          data={episodeStore.episodesForList.slice()}
-          extraData={episodeStore.favorites.length + episodeStore.episodes.length}
-          refreshing={refreshing}
-          estimatedItemSize={177}
-          onRefresh={manualRefresh}
-          ListEmptyComponent={
-            isLoading ? (
-              <ActivityIndicator />
-            ) : (
-              <EmptyState
-                preset="generic"
-                style={themed($emptyState)}
-                headingTx={
-                  episodeStore.favoritesOnly
-                    ? "demoPodcastListScreen:noFavoritesEmptyState.heading"
-                    : undefined
-                }
-                contentTx={
-                  episodeStore.favoritesOnly
-                    ? "demoPodcastListScreen:noFavoritesEmptyState.content"
-                    : undefined
-                }
-                button={episodeStore.favoritesOnly ? "" : undefined}
-                buttonOnPress={manualRefresh}
-                imageStyle={$emptyStateImage}
-                ImageProps={{ resizeMode: "contain" }}
-              />
-            )
-          }
-          ListHeaderComponent={
-            <View style={themed($heading)}>
-              <Text preset="heading" tx="demoPodcastListScreen:title" />
-              {(episodeStore.favoritesOnly || episodeStore.episodesForList.length > 0) && (
-                <View style={themed($toggle)}>
-                  <Switch
-                    value={episodeStore.favoritesOnly}
-                    onValueChange={() =>
-                      episodeStore.setProp("favoritesOnly", !episodeStore.favoritesOnly)
-                    }
-                    labelTx="demoPodcastListScreen:onlyFavorites"
-                    labelPosition="left"
-                    labelStyle={$labelStyle}
-                    accessibilityLabel={translate("demoPodcastListScreen:accessibility.switch")}
-                  />
-                </View>
-              )}
-            </View>
-          }
-          renderItem={({ item }) => (
-            <EpisodeCard
-              episode={item}
-              isFavorite={episodeStore.hasFavorite(item)}
-              onPressFavorite={() => episodeStore.toggleFavorite(item)}
-            />
-          )}
-        />
-      </Screen>
-    )
-  },
-)
-
-const EpisodeCard = observer(function EpisodeCard({
-  episode,
-  isFavorite,
-  onPressFavorite,
-}: {
-  episode: Episode
-  onPressFavorite: () => void
-  isFavorite: boolean
-}) {
-  const {
-    theme: { colors },
-    themed,
-  } = useAppTheme()
-
-  const liked = useSharedValue(isFavorite ? 1 : 0)
-  const imageUri = useMemo<ImageSourcePropType>(() => {
-    return rnrImages[Math.floor(Math.random() * rnrImages.length)]
-  }, [])
-
-  // Grey heart
-  const animatedLikeButtonStyles = useAnimatedStyle(() => {
-    return {
-      transform: [
-        {
-          scale: interpolate(liked.value, [0, 1], [1, 0], Extrapolation.EXTEND),
-        },
-      ],
-      opacity: interpolate(liked.value, [0, 1], [1, 0], Extrapolation.CLAMP),
-    }
-  })
-
-  // Pink heart
-  const animatedUnlikeButtonStyles = useAnimatedStyle(() => {
-    return {
-      transform: [
-        {
-          scale: liked.value,
-        },
-      ],
-      opacity: liked.value,
-    }
-  })
-
-  const handlePressFavorite = useCallback(() => {
-    onPressFavorite()
-    liked.value = withSpring(liked.value ? 0 : 1)
-  }, [liked, onPressFavorite])
-
-  /**
-   * Android has a "longpress" accessibility action. iOS does not, so we just have to use a hint.
-   * @see https://reactnative.dev/docs/accessibility#accessibilityactions
-   */
-  const accessibilityHintProps = useMemo(
-    () =>
-      Platform.select<AccessibilityProps>({
-        ios: {
-          accessibilityLabel: episode.title,
-          accessibilityHint: translate("demoPodcastListScreen:accessibility.cardHint", {
-            action: isFavorite ? "unfavorite" : "favorite",
-          }),
-        },
-        android: {
-          accessibilityLabel: episode.title,
-          accessibilityActions: [
-            {
-              name: "longpress",
-              label: translate("demoPodcastListScreen:accessibility.favoriteAction"),
-            },
-          ],
-          onAccessibilityAction: ({ nativeEvent }) => {
-            if (nativeEvent.actionName === "longpress") {
-              handlePressFavorite()
-            }
-          },
-        },
-      }),
-    [episode.title, handlePressFavorite, isFavorite],
-  )
-
-  const handlePressCard = () => {
-    openLinkInBrowser(episode.enclosure.link)
+  const handleSubmit = () => {
+    console.log("Form submitted:", { points, name })
+    alert(`Submitted: ${name} with ${points} points`)
   }
 
-  const ButtonLeftAccessory: ComponentType<ButtonAccessoryProps> = useMemo(
-    () =>
-      function ButtonLeftAccessory() {
-        return (
-          <View>
-            <Animated.View
-              style={[
-                $styles.row,
-                themed($iconContainer),
-                StyleSheet.absoluteFill,
-                animatedLikeButtonStyles,
-              ]}
-            >
-              <Icon
-                icon="heart"
-                size={ICON_SIZE}
-                color={colors.palette.neutral800} // dark grey
-              />
-            </Animated.View>
-            <Animated.View
-              style={[$styles.row, themed($iconContainer), animatedUnlikeButtonStyles]}
-            >
-              <Icon
-                icon="heart"
-                size={ICON_SIZE}
-                color={colors.palette.primary400} // pink
-              />
-            </Animated.View>
-          </View>
-        )
-      },
-    [animatedLikeButtonStyles, animatedUnlikeButtonStyles, colors, themed],
-  )
-
   return (
-    <Card
-      style={themed($item)}
-      verticalAlignment="force-footer-bottom"
-      onPress={handlePressCard}
-      onLongPress={handlePressFavorite}
-      HeadingComponent={
-        <View style={[$styles.row, themed($metadata)]}>
-          <Text
-            style={themed($metadataText)}
-            size="xxs"
-            accessibilityLabel={episode.datePublished.accessibilityLabel}
-          >
-            {episode.datePublished.textLabel}
-          </Text>
-          <Text
-            style={themed($metadataText)}
-            size="xxs"
-            accessibilityLabel={episode.duration.accessibilityLabel}
-          >
-            {episode.duration.textLabel}
-          </Text>
+    <Screen preset="scroll" safeAreaEdges={["top"]} style={{ backgroundColor: '#2c3e50' }}>
+      <View style={{ flex: 1, padding: 20 }}>
+        
+        {/* History Card - shows current form values */}
+        <View style={{
+          backgroundColor: '#34495e',
+          borderRadius: 15,
+          padding: 20,
+          marginBottom: 30,
+          flexDirection: 'row',
+          alignItems: 'center'
+        }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: '#bdc3c7', fontSize: 12, marginBottom: 5 }}>
+              7/30/2022
+            </Text>
+            <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
+              {name}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ color: '#3498db', fontSize: 14, marginRight: 15 }}>
+                12:53
+              </Text>
+              <Text style={{ color: '#2ecc71', fontSize: 14, marginRight: 15 }}>
+                0:37 | 5%
+              </Text>
+              <Text style={{ color: 'white', fontSize: 14 }}>
+                167
+              </Text>
+            </View>
+          </View>
+          
+          <View style={{
+            backgroundColor: '#000',
+            borderRadius: 10,
+            padding: 15,
+            alignItems: 'center',
+            minWidth: 80
+          }}>
+            <Text style={{ color: '#2ecc71', fontSize: 24, fontWeight: 'bold' }}>
+              +{points}
+            </Text>
+            <Text style={{ color: '#bdc3c7', fontSize: 10 }}>
+              Total Points
+            </Text>
+          </View>
+          
+          <TouchableOpacity style={{ marginLeft: 15 }}>
+            <Text style={{ color: '#e74c3c', fontSize: 20 }}>♥</Text>
+          </TouchableOpacity>
         </View>
-      }
-      content={`${episode.parsedTitleAndSubtitle.title} - ${episode.parsedTitleAndSubtitle.subtitle}`}
-      {...accessibilityHintProps}
-      RightComponent={<Image source={imageUri} style={themed($itemThumbnail)} />}
-      FooterComponent={
-        <Button
-          onPress={handlePressFavorite}
-          onLongPress={handlePressFavorite}
-          style={themed([$favoriteButton, isFavorite && $unFavoriteButton])}
-          accessibilityLabel={
-            isFavorite
-              ? translate("demoPodcastListScreen:accessibility.unfavoriteIcon")
-              : translate("demoPodcastListScreen:accessibility.favoriteIcon")
-          }
-          LeftAccessory={ButtonLeftAccessory}
-        >
-          <Text
-            size="xxs"
-            accessibilityLabel={episode.duration.accessibilityLabel}
-            weight="medium"
-            text={
-              isFavorite
-                ? translate("demoPodcastListScreen:unfavoriteButton")
-                : translate("demoPodcastListScreen:favoriteButton")
-            }
+
+        {/* Form Section */}
+        <View>
+          {/* Points Input */}
+          <Text style={{ color: 'white', fontSize: 16, marginBottom: 10 }}>
+            Points
+          </Text>
+          <TextInput
+            style={{
+              backgroundColor: '#34495e',
+              color: 'white',
+              borderRadius: 8,
+              padding: 15,
+              fontSize: 16,
+              marginBottom: 20
+            }}
+            value={points}
+            onChangeText={setPoints}
+            keyboardType="numeric"
+            placeholder="Enter points"
+            placeholderTextColor="#7f8c8d"
           />
-        </Button>
-      }
-    />
+
+          {/* Name Input */}
+          <Text style={{ color: 'white', fontSize: 16, marginBottom: 10 }}>
+            Name
+          </Text>
+          <TextInput
+            style={{
+              backgroundColor: '#34495e',
+              color: 'white',
+              borderRadius: 8,
+              padding: 15,
+              fontSize: 16,
+              marginBottom: 30
+            }}
+            value={name}
+            onChangeText={setName}
+            placeholder="Enter name"
+            placeholderTextColor="#7f8c8d"
+          />
+
+          {/* Submit Button */}
+          <TouchableOpacity
+            style={{
+              backgroundColor: 'white',
+              borderRadius: 25,
+              padding: 15,
+              alignItems: 'center',
+              marginBottom: 20
+            }}
+            onPress={handleSubmit}
+          >
+            <Text style={{ 
+              color: '#2c3e50', 
+              fontSize: 16, 
+              fontWeight: 'bold' 
+            }}>
+              Submit
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
+      </View>
+    </Screen>
   )
-})
-
-// #region Styles
-const $listContentContainer: ThemedStyle<ContentStyle> = ({ spacing }) => ({
-  paddingHorizontal: spacing.lg,
-  paddingTop: spacing.lg + spacing.xl,
-  paddingBottom: spacing.lg,
-})
-
-const $heading: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginBottom: spacing.md,
-})
-
-const $item: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  padding: spacing.md,
-  marginTop: spacing.md,
-  minHeight: 120,
-  backgroundColor: colors.palette.neutral100,
-})
-
-const $itemThumbnail: ThemedStyle<ImageStyle> = ({ spacing }) => ({
-  marginTop: spacing.sm,
-  borderRadius: 50,
-  alignSelf: "flex-start",
-})
-
-const $toggle: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginTop: spacing.md,
-})
-
-const $labelStyle: TextStyle = {
-  textAlign: "left",
 }
-
-const $iconContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  height: ICON_SIZE,
-  width: ICON_SIZE,
-  marginEnd: spacing.sm,
-})
-
-const $metadata: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
-  color: colors.textDim,
-  marginTop: spacing.xs,
-})
-
-const $metadataText: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
-  color: colors.textDim,
-  marginEnd: spacing.md,
-  marginBottom: spacing.xs,
-})
-
-const $favoriteButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  borderRadius: 17,
-  marginTop: spacing.md,
-  justifyContent: "flex-start",
-  backgroundColor: colors.palette.neutral300,
-  borderColor: colors.palette.neutral300,
-  paddingHorizontal: spacing.md,
-  paddingTop: spacing.xxxs,
-  paddingBottom: 0,
-  minHeight: 32,
-  alignSelf: "flex-start",
-})
-
-const $unFavoriteButton: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  borderColor: colors.palette.primary100,
-  backgroundColor: colors.palette.primary100,
-})
-
-const $emptyState: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginTop: spacing.xxl,
-})
-
-const $emptyStateImage: ImageStyle = {
-  transform: [{ scaleX: isRTL ? -1 : 1 }],
-}
-// #endregion
