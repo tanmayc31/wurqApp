@@ -1,136 +1,95 @@
-import { FC } from "react"
-import { Image, ImageStyle, TextStyle, View, ViewStyle } from "react-native"
-import { ListItem, Screen, Text } from "../components"
-import { DemoTabScreenProps } from "../navigators/DemoNavigator"
-import { $styles } from "../theme"
-import { openLinkInBrowser } from "../utils/openLinkInBrowser"
-import { isRTL } from "@/i18n"
-import type { ThemedStyle } from "@/theme"
-import { useAppTheme } from "@/utils/useAppTheme"
+import React, { FC, useEffect, useState } from "react"
+import { View, Text, ScrollView, TextInput } from "react-native"
+import { Screen } from "@/components"
+import { DemoTabScreenProps } from "@/navigators/DemoNavigator"
 
-const chainReactLogo = require("../../assets/images/demo/cr-logo.png")
-const reactNativeLiveLogo = require("../../assets/images/demo/rnl-logo.png")
-const reactNativeRadioLogo = require("../../assets/images/demo/rnr-logo.png")
-const reactNativeNewsletterLogo = require("../../assets/images/demo/rnn-logo.png")
+export const SecondScreen: FC<DemoTabScreenProps<"Second">> = function SecondScreen(_props) {
+  const [timer, setTimer] = useState(0)
+  const [users, setUsers] = useState([])
+  const [usersText, setUsersText] = useState("")
 
-export const SecondScreen: FC<DemoTabScreenProps<"Second">> =
-  function SecondScreen(_props) {
-    const { themed } = useAppTheme()
-    return (
-      <Screen preset="scroll" contentContainerStyle={$styles.container} safeAreaEdges={["top"]}>
-        <Text preset="heading" tx="demoCommunityScreen:title" style={themed($title)} />
-        <Text tx="demoCommunityScreen:tagLine" style={themed($tagline)} />
+  // Timer that starts when page opens
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimer(prevTimer => prevTimer + 1)
+    }, 1000)
 
-        <Text preset="subheading" tx="demoCommunityScreen:joinUsOnSlackTitle" />
-        <Text tx="demoCommunityScreen:joinUsOnSlack" style={themed($description)} />
-        <ListItem
-          tx="demoCommunityScreen:joinSlackLink"
-          leftIcon="slack"
-          rightIcon={isRTL ? "caretLeft" : "caretRight"}
-          onPress={() => openLinkInBrowser("https://community.infinite.red/")}
-        />
-        <Text
-          preset="subheading"
-          tx="demoCommunityScreen:makeIgniteEvenBetterTitle"
-          style={themed($sectionTitle)}
-        />
-        <Text tx="demoCommunityScreen:makeIgniteEvenBetter" style={themed($description)} />
-        <ListItem
-          tx="demoCommunityScreen:contributeToIgniteLink"
-          leftIcon="github"
-          rightIcon={isRTL ? "caretLeft" : "caretRight"}
-          onPress={() => openLinkInBrowser("https://github.com/infinitered/ignite")}
-        />
+    return () => clearInterval(interval)
+  }, [])
 
-        <Text
-          preset="subheading"
-          tx="demoCommunityScreen:theLatestInReactNativeTitle"
-          style={themed($sectionTitle)}
-        />
-        <Text tx="demoCommunityScreen:theLatestInReactNative" style={themed($description)} />
-        <ListItem
-          tx="demoCommunityScreen:reactNativeRadioLink"
-          bottomSeparator
-          rightIcon={isRTL ? "caretLeft" : "caretRight"}
-          LeftComponent={
-            <View style={[$styles.row, themed($logoContainer)]}>
-              <Image source={reactNativeRadioLogo} style={$logo} />
-            </View>
-          }
-          onPress={() => openLinkInBrowser("https://reactnativeradio.com/")}
-        />
-        <ListItem
-          tx="demoCommunityScreen:reactNativeNewsletterLink"
-          bottomSeparator
-          rightIcon={isRTL ? "caretLeft" : "caretRight"}
-          LeftComponent={
-            <View style={[$styles.row, themed($logoContainer)]}>
-              <Image source={reactNativeNewsletterLogo} style={$logo} />
-            </View>
-          }
-          onPress={() => openLinkInBrowser("https://reactnativenewsletter.com/")}
-        />
-        <ListItem
-          tx="demoCommunityScreen:reactNativeLiveLink"
-          bottomSeparator
-          rightIcon={isRTL ? "caretLeft" : "caretRight"}
-          LeftComponent={
-            <View style={[$styles.row, themed($logoContainer)]}>
-              <Image source={reactNativeLiveLogo} style={$logo} />
-            </View>
-          }
-          onPress={() => openLinkInBrowser("https://rn.live/")}
-        />
-        <ListItem
-          tx="demoCommunityScreen:chainReactConferenceLink"
-          rightIcon={isRTL ? "caretLeft" : "caretRight"}
-          LeftComponent={
-            <View style={[$styles.row, themed($logoContainer)]}>
-              <Image source={chainReactLogo} style={$logo} />
-            </View>
-          }
-          onPress={() => openLinkInBrowser("https://cr.infinite.red/")}
-        />
-        <Text
-          preset="subheading"
-          tx="demoCommunityScreen:hireUsTitle"
-          style={themed($sectionTitle)}
-        />
-        <Text tx="demoCommunityScreen:hireUs" style={themed($description)} />
-        <ListItem
-          tx="demoCommunityScreen:hireUsLink"
-          leftIcon="clap"
-          rightIcon={isRTL ? "caretLeft" : "caretRight"}
-          onPress={() => openLinkInBrowser("https://infinite.red/contact")}
-        />
-      </Screen>
-    )
+  // Fetch users when page loads
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('http://192.168.1.41:3000/')
+      const data = await response.json()
+      setUsers(data)
+      
+      // Convert users to text format
+      const userTextData = data.map((item: any) => 
+        `${item.user.name} ${item.user.lastname}, Age: ${item.user.age}, Fee: $${item.user.fee}, Location: ${item.location}`
+      ).join('\n')
+      
+      setUsersText(userTextData)
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
   }
 
-const $title: ThemedStyle<TextStyle> = ({ spacing }) => ({
-  marginBottom: spacing.sm,
-})
+  // Format timer display (minutes:seconds)
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
 
-const $tagline: ThemedStyle<TextStyle> = ({ spacing }) => ({
-  marginBottom: spacing.xxl,
-})
+  return (
+    <Screen preset="scroll" safeAreaEdges={["top"]}>
+      <View style={{ flex: 1, padding: 20 }}>
+        
+        {/* Timer Display */}
+        <View style={{ 
+          backgroundColor: '#e8e8e8', 
+          padding: 20, 
+          borderRadius: 10, 
+          marginBottom: 20,
+          alignItems: 'center'
+        }}>
+          <Text style={{ fontSize: 18, marginBottom: 10 }}>Timer</Text>
+          <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#333' }}>
+            {formatTime(timer)}
+          </Text>
+        </View>
 
-const $description: ThemedStyle<TextStyle> = ({ spacing }) => ({
-  marginBottom: spacing.lg,
-})
-
-const $sectionTitle: ThemedStyle<TextStyle> = ({ spacing }) => ({
-  marginTop: spacing.xxl,
-})
-
-const $logoContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginEnd: spacing.md,
-  flexWrap: "wrap",
-  alignContent: "center",
-  alignSelf: "stretch",
-})
-
-const $logo: ImageStyle = {
-  height: 38,
-  width: 38,
+        {/* Users Text Box */}
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 18, marginBottom: 10, fontWeight: 'bold' }}>
+            All Users Data:
+          </Text>
+          
+          <TextInput
+            style={{
+              borderWidth: 1,
+              borderColor: '#ccc',
+              borderRadius: 8,
+              padding: 15,
+              minHeight: 300,
+              textAlignVertical: 'top',
+              backgroundColor: '#f9f9f9',
+              fontSize: 14,
+              fontFamily: 'monospace'
+            }}
+            multiline={true}
+            value={usersText}
+            editable={false}
+            scrollEnabled={true}
+          />
+        </View>
+        
+      </View>
+    </Screen>
+  )
 }
