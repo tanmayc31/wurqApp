@@ -10,9 +10,11 @@ import { observer } from "mobx-react-lite"
 import * as Screens from "@/screens"
 import Config from "../config"
 import { useStores } from "../models"
+
 import { navigationRef, useBackButtonHandler } from "./navigationUtilities"
 import { useAppTheme, useThemeProvider } from "@/utils/useAppTheme"
 import { ComponentProps } from "react"
+import { DemoNavigator } from "./DemoNavigator"
 
 /**
  * This type allows TypeScript to know what routes are defined in this navigator
@@ -30,12 +32,12 @@ import { ComponentProps } from "react"
 export type AppStackParamList = {
   Welcome: undefined
   Login: undefined
-  
+  Main: undefined
+  // DemoShowroom: { queryIndex?: string; itemIndex?: string }
+  Second: undefined
+  Third: undefined
+  // Demo: NavigatorScreenParams<DemoTabParamList>
   // 🔥 Your screens go here
-  MainScreen: undefined
-  SecondScreen: undefined
-  ThirdScreen: undefined
-
   // IGNITE_GENERATOR_ANCHOR_APP_STACK_PARAM_LIST
 }
 
@@ -76,9 +78,10 @@ const AppStack = observer(function AppStack() {
       {isAuthenticated ? (
         <>
           <Stack.Screen name="Welcome" component={Screens.WelcomeScreen} />
-          <Stack.Screen name="MainScreen" component={Screens.MainScreen} />
-          <Stack.Screen name="SecondScreen" component={Screens.SecondScreen} />
-          <Stack.Screen name="ThirdScreen" component={Screens.ThirdScreen} />
+          <Stack.Screen name="Main" component={DemoNavigator} />
+          <Stack.Screen name="Second" component={Screens.SecondScreen} />
+          <Stack.Screen name="Third" component={Screens.ThirdScreen} />
+          {/* <Stack.Screen name="Demo" component={DemoNavigator} /> */}
         </>
       ) : (
         <>
@@ -104,7 +107,7 @@ export const AppNavigator = observer(function AppNavigator(props: NavigationProp
   return (
     <ThemeProvider value={{ themeScheme, setThemeContextOverride }}>
       <NavigationContainer ref={navigationRef} theme={navigationTheme} {...props}>
-       
+        
           <AppStack />
         
       </NavigationContainer>
