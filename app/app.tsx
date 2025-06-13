@@ -29,11 +29,8 @@ import * as storage from "./utils/storage"
 import { customFontsToLoad } from "./theme"
 import { KeyboardProvider } from "react-native-keyboard-controller"
 import { loadDateFnsLocale } from "./utils/formatDate"
-import { Text, View, FlatList } from "react-native"
-
 
 export const NAVIGATION_PERSISTENCE_KEY = "NAVIGATION_STATE"
-
 
 // Web linking configuration
 const prefix = Linking.createURL("/")
@@ -70,26 +67,11 @@ export function App() {
 
   const [areFontsLoaded, fontLoadError] = useFonts(customFontsToLoad)
   const [isI18nInitialized, setIsI18nInitialized] = useState(false)
-  const [apiData, setApiData] = useState<string | null>(null)
-  const [data, setData] = useState([])
-  const [loading, setLoading] = useState(true)
-
 
   useEffect(() => {
     initI18n()
       .then(() => setIsI18nInitialized(true))
       .then(() => loadDateFnsLocale())
-
-    fetch("http://192.168.24.26:3000")
-      .then(res => res.json())
-      .then(json => {
-        setData(json)
-        setLoading(false)
-      })
-      .catch(err => {
-        console.error("API error:", err)
-        setLoading(false)
-      })
   }, [])
 
   const { rehydrated } = useInitialRootStore(() => {
@@ -122,7 +104,6 @@ export function App() {
 
   // otherwise, we're ready to render the app
   return (
-    
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <KeyboardProvider>
         <AppNavigator
@@ -131,25 +112,6 @@ export function App() {
           onStateChange={onNavigationStateChange}
         />
       </KeyboardProvider>
-      {/* <View style={{ padding: 20 }}>
-        {loading ? (
-          <Text>Loading...</Text>
-        ) : (
-          <FlatList
-            data={data}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <View style={{ marginBottom: 10 }}>
-                <Text>Date: {item.date}</Text>
-                <Text>Location: {item.location}</Text>
-                <Text>User: {item.user.name} {item.user.lastname}</Text>
-                <Text>Age: {item.user.age}</Text>
-                <Text>Fee: ${item.user.fee}</Text>
-              </View>
-            )}
-          />
-        )}
-      </View> */}
     </SafeAreaProvider>
   )
 }
